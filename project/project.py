@@ -76,9 +76,18 @@ class MultipleBlobDetection(BaseWidget):
         """
         After setting the best parameters run the full algorithm
         """
-        print('RUN pressed')
-        print('threshold:', self._threshold)
-        pass
+        start_frame = 0
+        stop_frame = 200
+        # pass object, not string
+        my_video = self._player.value
+        # # my_video = 'CIMG4027.MOV'
+        # ##########################################################################
+        maxima_points, vid_fragment = video_analise(my_video, start_frame, stop_frame)
+        x_est, y_est, est_number = kalman(maxima_points, stop_frame, vid_fragment)
+        plot_points(vid_fragment, maxima_points, x_est, y_est, est_number)
+        print('\nFinal estimates number:', est_number)
+        print('\nTrajectories drawing...')
+        print('EOF - DONE')
 
 
 # Execute the application

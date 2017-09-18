@@ -65,12 +65,14 @@ def otsu_binary(img):
 def select_frames(video, frame_start, frame_stop):
     """
     Function that return selected frames from video.
-    :param video: string, name of video whom frames are selected,
+    :param video: VideoCapture object from OpenCV
     :param frame_start: integer, frame from selection should be started
     :param frame_stop: integer, ending frame of selected section
     :return: video fragment <start_frame, stop_frame>
     """
-    cap = cv2.VideoCapture(video)
+    # cap = cv2.VideoCapture(video)
+    # pass object, not string
+    cap = video
     # font = cv2.FONT_HERSHEY_SIMPLEX
     video_fragment = []
     cap.set(1, frame_start)
@@ -295,13 +297,11 @@ def video_analise(video, start_f, stop_f):
                             vid_fragment[frame_nr][3D pixel matrix, BGR]
     """
     vid_frag = select_frames(video, start_f, stop_f)
-    # try:
-    height = vid_frag[0].shape[0]
-    width = vid_frag[0].shape[1]
-    # except IndexError:
-    #     height = 0
-    #     width = 0
-
+    try:
+        height = vid_frag[0].shape[0]
+        width = vid_frag[0].shape[1]
+    except IndexError:
+        raise IndexError('No video loaded. Check video path.')
 
     # kernel for morphological operations
     # check cv2.getStructuringElement() doc for more info
@@ -349,17 +349,20 @@ def video_analise(video, start_f, stop_f):
     return maxima_points, vid_frag
 
 
-def kalman(max_points):
+def kalman(max_points, stop_frame, vid_fragment):
     """
     Kalman Filter function. Takes measurements from video analyse function
     and estimates positions of detected objects. Munkres algorithm is used for
     assignments between estimates (states) and measurements.
     :param max_points: measurements.
+    :param stop_frame: number of frames to analise
+    :param vid_fragment: video fragment for estimates displaying
     :return: x_est, y_est - estimates of x and y positions in the following
              format: x_est[index_of_object][frame] gives x position of object
              with index = [index_of_object] in the frame = [frame]. The same
              goes with y positions.
     """
+    font = cv2.FONT_HERSHEY_SIMPLEX  # font for displaying info on the image
     index_error = 0
     value_error = 0
     # step of filter
@@ -565,7 +568,7 @@ def kalman(max_points):
                 print('state_removed', i)
 
         ######################################################################
-        if not index_error or  not value_error:
+        if not index_error or not value_error:
             # draw measurements point loop
             if cv2.waitKey(30) & 0xFF == ord('q'):
                 break
@@ -643,7 +646,7 @@ def plot_points(vid_frag, max_points, x_est, y_est, est_number):
 # font = cv2.FONT_HERSHEY_SIMPLEX
 # ##########################################################################
 # maxima_points, vid_fragment = video_analise(my_video, start_frame, stop_frame)
-# x_est, y_est, est_number = kalman(maxima_points)
+# x_est, y_est, est_number = kalman(maxima_points, stop_frame)
 # plot_points(vid_fragment, maxima_points, x_est, y_est, est_number)
 # print('\nFinal estimates number:', est_number)
 # print('\nTrajectories drawing...')
