@@ -454,11 +454,11 @@ def kalman(max_points, stop_frame, vid_fragment):
         for i in range(est_number):
             if not np.isnan(x[i][0]) and not np.isnan(x[i][1]):
                 posterior_list.append(i)
-                print(i)
-        print(posterior_list)
-
-        print('state\n', x[0:est_number, 0:2])
-        print('\n')
+                # print(i)
+        # print(posterior_list)
+        #
+        # print('state\n', x[0:est_number, 0:2])
+        # print('\n')
         #    temp_matrix = np.array(x[0:est_number, 0:2])
         try:
             temp_matrix = np.array(x[posterior_list, 0:2])
@@ -547,8 +547,8 @@ def kalman(max_points, stop_frame, vid_fragment):
                 x[est_number, ::] = [new_detection[frame][i][0],
                                      new_detection[frame][i][1], 0, 0, 0, 0]
                 est_number += 1
-                print('state added', est_number)
-                print('new posterior\n', x[0:est_number, 0:2])
+                # print('state added', est_number)
+                # print('new posterior\n', x[0:est_number, 0:2])
         ######################################################################
         # find states without measurements and remove them
         no_track_list = []
@@ -568,40 +568,40 @@ def kalman(max_points, stop_frame, vid_fragment):
                 print('state_removed', i)
 
         ######################################################################
-        if not index_error or not value_error:
-            # draw measurements point loop
-            if cv2.waitKey(30) & 0xFF == ord('q'):
-                break
-            # img, text, (x,y), font, size, color, thickens
-            cv2.putText(vid_fragment[frame], 'f.nr:' + str(ff_nr),
-                        (100, 15), font, 0.5, (254, 254, 254), 1)
-
-            # mark local maximas for every frame
-            measurement_number = 0
-            for point in measurements:
-                cv2.circle(vid_fragment[frame], (point[0], point[1]), 5,
-                           (0, 0, 255), 1)
-                cv2.putText(vid_fragment[frame], str(measurement_number),
-                            (point[0], point[1]), font, 0.5, (0, 0, 254), 1)
-                measurement_number += 1
-
-            for j in range(len(x)):
-                if x[j][0] > 0 and x[j][1] > 0:
-                    # positions.append((x_est[i][j], y_est[i][j]))
-                    cv2.circle(vid_fragment[frame], (int(x[j][0]),
-                                                     int(x[j][1])), 3,
-                                                    (0, 255, 0), 1)
-                    cv2.putText(vid_fragment[frame], str(j),
-                                (int(x[j][0] + 10), int(x[j][1] + 20)),
-                                font, 0.5, (0, 254, 0), 1)
-
-            cv2.imshow('bin', vid_fragment[frame])
-            cv2.waitKey(10)
+        # if not index_error or not value_error:
+        #     # draw measurements point loop
+        #     if cv2.waitKey(30) & 0xFF == ord('q'):
+        #         break
+        #     # img, text, (x,y), font, size, color, thickens
+        #     cv2.putText(vid_fragment[frame], 'f.nr:' + str(ff_nr),
+        #                 (100, 15), font, 0.5, (254, 254, 254), 1)
+        #
+        #     # mark local maximas for every frame
+        #     measurement_number = 0
+        #     for point in measurements:
+        #         cv2.circle(vid_fragment[frame], (point[0], point[1]), 5,
+        #                    (0, 0, 255), 1)
+        #         cv2.putText(vid_fragment[frame], str(measurement_number),
+        #                     (point[0], point[1]), font, 0.5, (0, 0, 254), 1)
+        #         measurement_number += 1
+        #
+        #     for j in range(len(x)):
+        #         if x[j][0] > 0 and x[j][1] > 0:
+        #             # positions.append((x_est[i][j], y_est[i][j]))
+        #             cv2.circle(vid_fragment[frame], (int(x[j][0]),
+        #                                              int(x[j][1])), 3,
+        #                                             (0, 255, 0), 1)
+        #             cv2.putText(vid_fragment[frame], str(j),
+        #                         (int(x[j][0] + 10), int(x[j][1] + 20)),
+        #                         font, 0.5, (0, 254, 0), 1)
+        #
+        #     cv2.imshow('bin', vid_fragment[frame])
+        #     cv2.waitKey(10)
 
             print(ff_nr, '--------------------------------------')
             ff_nr += 1
-            print(removed_states)
-            print(index)
+            # print(removed_states)
+            # print(index)
     return x_est, y_est, est_number
 
 
