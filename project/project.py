@@ -27,6 +27,8 @@ class MultipleBlobDetection(BaseWidget):
         # self._blobsize = ControlSlider('Minimum blob size', 100, 100, 2000)
         self._player = ControlPlayer('Player')
         self._runbutton = ControlButton('Run')
+        self._start_frame = ControlText('Start Frame')
+        self._stop_frame = ControlText('Stop Frame')
 
         # Define the function that will be called when a file is selected
         self._videofile.changed_event = self.__videoFileSelectionEvent
@@ -37,6 +39,7 @@ class MultipleBlobDetection(BaseWidget):
         # Define the organization of the Form Controls
         self.formset = [
             ('_videofile', '_outputfile'),
+            ('_start_frame', '_stop_frame'),
             '_threshold',
             '_runbutton',
             '_player'
@@ -52,7 +55,7 @@ class MultipleBlobDetection(BaseWidget):
         """
         Do some processing to the frame and return the result frame
         """
-        # kernel for morphological operations
+        # kernels for morphological operations
         # check cv2.getStructuringElement() doc for more info
         opening_kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (19, 19))
         erosion_kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5, 5))
@@ -76,11 +79,10 @@ class MultipleBlobDetection(BaseWidget):
         """
         After setting the best parameters run the full algorithm
         """
-        start_frame = 0
-        stop_frame = 200
+        start_frame = int(self._start_frame.value)
+        stop_frame = int(self._stop_frame.value)
         # pass object, not string
         my_video = self._player.value
-        # # my_video = 'CIMG4027.MOV'
         # ####################################################################
         maxima_points, vid_fragment = video_analise(my_video, start_frame,
                                                     stop_frame)
@@ -90,7 +92,6 @@ class MultipleBlobDetection(BaseWidget):
         print('\nFinal estimates number:', est_number)
         plot_points(vid_fragment, maxima_points, x_est, y_est, est_number)
         print('EOF - DONE')
-
 
 # Execute the application
 if __name__ == "__main__":
