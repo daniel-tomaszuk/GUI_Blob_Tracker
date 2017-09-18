@@ -1,0 +1,16 @@
+cycler==0.10.0
+logging-bootstrap==1.0.0
+matplotlib==2.0.2
+numpy==1.13.1
+pkg-resources==0.0.0
+PyForms==2.0.5
+PyOpenGL==3.1.0
+pyparsing==2.2.0
+PyQt5==5.9
+pysettings==1.0.0
+python-dateutil==2.6.1
+pytz==2017.2
+scipy==0.19.1
+sip==4.19.3
+six==1.11.0
+visvis==1.10.0
