@@ -340,8 +340,7 @@ def video_analise(video, start_f, stop_f):
         dilate = cv2.dilate(opening, dilate_kernel, iterations=2)
 
         # create LoG kernel for finding local maximas
-        log_kernel = get_log_kernel(30, 15)
-        log_img = cv2.filter2D(dilate, cv2.CV_32F, log_kernel)
+        log_img = cv2.filter2D(dilate, cv2.CV_32F, get_log_kernel(30, 15))
         # get local maximas of filtered image per frame
         maxima_points.append(local_maxima(log_img))
         if i % 10 == 0:
@@ -636,15 +635,19 @@ def plot_points(vid_frag, max_points, x_est, y_est, est_number):
     plt.grid()
     plt.show()
 
+# # ##########################################################################
+# start_frame = 0
+# stop_frame = 200
+# my_video = 'CIMG4027.MOV'
+#
+# font = cv2.FONT_HERSHEY_SIMPLEX
 # ##########################################################################
-start_frame = 0
-stop_frame = 200
-my_video = 'CIMG4027.MOV'
-font = cv2.FONT_HERSHEY_SIMPLEX
-##########################################################################
-maxima_points, vid_fragment = video_analise(my_video, start_frame, stop_frame)
-x_est, y_est, est_number = kalman(maxima_points)
-plot_points(vid_fragment, maxima_points, x_est, y_est, est_number)
-print('\nFinal estimates number:', est_number)
-print('\nTrajectories drawing...')
-print('EOF - DONE')
+# maxima_points, vid_fragment = video_analise(my_video, start_frame, stop_frame)
+# x_est, y_est, est_number = kalman(maxima_points)
+# plot_points(vid_fragment, maxima_points, x_est, y_est, est_number)
+# print('\nFinal estimates number:', est_number)
+# print('\nTrajectories drawing...')
+# print('EOF - DONE')
+
+if __name__ == "__main__":
+    pass
