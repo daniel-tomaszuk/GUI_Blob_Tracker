@@ -570,11 +570,11 @@ def kalman(max_points, stop_frame, vid_fragment):
         ######################################################################
         # if not index_error or not value_error:
         #     # draw measurements point loop
-        #     if cv2.waitKey(30) & 0xFF == ord('q'):
-        #         break
+        #     # if cv2.waitKey(30) & 0xFF == ord('q'):
+        #     #     break
         #     # img, text, (x,y), font, size, color, thickens
-        #     cv2.putText(vid_fragment[frame], 'f.nr:' + str(ff_nr),
-        #                 (100, 15), font, 0.5, (254, 254, 254), 1)
+        #     # cv2.putText(vid_fragment[frame], 'f.nr:' + str(ff_nr),
+        #     #             (100, 15), font, 0.5, (254, 254, 254), 1)
         #
         #     # mark local maximas for every frame
         #     measurement_number = 0
