@@ -606,32 +606,40 @@ def kalman(max_points, stop_frame, vid_fragment):
 
 
 def plot_points(vid_frag, max_points, x_est, y_est, est_number):
-    index_error = 0
     # plot raw measurements
     for frame_positions in max_points:
         for pos in frame_positions:
             plt.plot(pos[0], pos[1], 'r.')
-    try:
-        plt.axis([0, vid_frag[0].shape[1], vid_frag[0].shape[0], 0])
-    except IndexError:
-        index_error = 1
+    # try:
+    plt.axis([0, vid_frag[0].shape[1], vid_frag[0].shape[0], 0])
+    # except IndexError:
+    #     index_error = 1
     plt.xlabel('width [px]')
     plt.ylabel('height [px]')
     plt.title('Objects raw measurements')
     ##########################################################################
+    # image border - 10 px
+    x_max = vid_frag[0].shape[1] - 10
+    y_max = vid_frag[0].shape[0] - 10
     # plot estimated trajectories
     for ind in range(est_number):
+        # if estimate exists
         if len(x_est[ind]):
-            #        for pos in range(len(x_est[ind])):
-            #            if not np.isnan(x_est[ind][pos]):
-            #                plt.plot(x_est[ind][pos], y_est[ind][pos], 'g.')
-            plt.plot(x_est[ind][::], y_est[ind][::], 'g-')
+            for pos in range(len(x_est[ind])):
+                # don't draw near 0 points and near max points
+                if not np.isnan(x_est[ind][pos][0]) and \
+                                x_est[ind][pos][0] > 10 and \
+                                y_est[ind][pos][0] > 10 and \
+                                x_est[ind][pos][0] < x_max - 10 and \
+                                y_est[ind][pos][0] < y_max - 10:
+                    plt.plot(x_est[ind][pos][0], y_est[ind][pos][0], 'g.')
+            # plt.plot(x_est[ind][::], y_est[ind][::], 'g-')
     # print(frame)
     #  [xmin xmax ymin ymax]
-    try:
-        plt.axis([0, vid_frag[0].shape[1], vid_frag[0].shape[0], 0])
-    except IndexError:
-        index_error = 1
+    # try:
+    plt.axis([0, vid_frag[0].shape[1], vid_frag[0].shape[0], 0])
+    # except IndexError:
+    #     index_error = 1
     plt.xlabel('width [px]')
     plt.ylabel('height [px]')
     plt.title('Objects estimated trajectories')
@@ -645,7 +653,8 @@ def plot_points(vid_frag, max_points, x_est, y_est, est_number):
 #
 # font = cv2.FONT_HERSHEY_SIMPLEX
 # ##########################################################################
-# maxima_points, vid_fragment = video_analise(my_video, start_frame, stop_frame)
+# maxima_points, vid_fragment = video_analise(my_video, start_frame,
+#                                             stop_frame)
 # x_est, y_est, est_number = kalman(maxima_points, stop_frame)
 # plot_points(vid_fragment, maxima_points, x_est, y_est, est_number)
 # print('\nFinal estimates number:', est_number)
