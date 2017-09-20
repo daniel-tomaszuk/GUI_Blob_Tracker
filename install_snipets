@@ -1,7 +1,8 @@
 Instalation of PyForms: (not from pypi)
 
-
-
 pip install git+https://github.com/UmSenhorQualquer/pyforms.git --upgrade
 pip install git+https://github.com/UmSenhorQualquer/pysettings.git --upgrade
 pip install git+https://UmSenhorQualquer@bitbucket.org/fchampalimaud/logging-bootstrap.git --upgrade
+
+Installation of OpenCV on Ubuntu (I am using Ubuntu 16.04):
+https://www.learnopencv.com/install-opencv3-on-ubuntu/
