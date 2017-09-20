@@ -8,7 +8,6 @@ from pyforms.Controls import ControlSlider
 from pyforms.Controls import ControlFile
 from pyforms.Controls import ControlPlayer
 from pyforms.Controls import ControlCheckBox
-from pyforms.Controls import ControlCheckBoxList
 from pyforms.Controls import ControlCombo
 from pyforms.Controls import ControlProgress
 import pyforms
@@ -71,7 +70,7 @@ class MultipleBlobDetection(BaseWidget):
         self._LoG = ControlCheckBox('LoG - Laplacian of Gaussian')
         self._LoG_size = ControlSlider('LoG Kernel Size', 30, 1, 60)
 
-        # self._load_bar = ControlProgress()
+        self._progress_bar = ControlProgress('Progress Bar')
 
         # Define the function that will be called when a file is selected
         self._videofile.changed_event = self.__videoFileSelectionEvent
@@ -91,6 +90,7 @@ class MultipleBlobDetection(BaseWidget):
             ('_dilate_size', '_erode_size', '_open_size', '_close_size'),
             ('_LoG', '_LoG_size'),
             '_runbutton',
+            '_progress_bar',
             '_player'
         ]
 
@@ -165,6 +165,286 @@ class MultipleBlobDetection(BaseWidget):
         """
         self._player.value = self._videofile.value
 
+    def _kalman(self, max_points, stop_frame, vid_fragment):
+        """
+        Kalman Filter function. Takes measurements from video analyse function
+        and estimates positions of detected objects. Munkres algorithm is used
+        for assignments between estimates (states) and measurements.
+        :param max_points: measurements.
+        :param stop_frame: number of frames to analise
+        :param vid_fragment: video fragment for estimates displaying
+        :return: x_est, y_est - estimates of x and y positions in the following
+                 format: x_est[index_of_object][frame] gives x position of object
+                 with index = [index_of_object] in the frame = [frame]. The same
+                 goes with y positions.
+        """
+        # font for displaying info on the image
+        font = cv2.FONT_HERSHEY_SIMPLEX
+        index_error = 0
+        value_error = 0
+        # step of filter
+        dt = 1.
+        R_var = 1  # measurements variance between x-x and y-y
+        # Q_var = 0.1  # model variance
+        # state covariance matrix - no initial covariances, variances only
+        # [10^2 px, 10^2 px, ..] -
+        P = np.diag([100, 100, 10, 10, 1, 1])
+        # state transition matrix for 6 state variables
+        # (position - velocity - acceleration,
+        # x, y)
+        F = np.array([[1, 0, dt, 0, 0.5 * pow(dt, 2), 0],
+                      [0, 1, 0, dt, 0, 0.5 * pow(dt, 2)],
+                      [0, 0, 1, 0, dt, 0],
+                      [0, 0, 0, 1, 0, dt],
+                      [0, 0, 0, 0, 1, 0],
+                      [0, 0, 0, 0, 0, 1]])
+        # x and y coordinates only - measurements matrix
+        H = np.array([[1., 0., 0., 0., 0., 0.],
+                      [0., 1., 0., 0., 0., 0.]])
+        # no initial corelation between x and y positions - variances only
+        R = np.array(
+            [[R_var, 0.], [0., R_var]])  # measurement covariance matrix
+        # Q must be the same shape as P
+        Q = np.diag([100, 100, 10, 10, 1, 1])  # model covariance matrix
+
+        # create state vectors, max number of states - as much as frames
+        x = np.zeros((stop_frame, 6))
+        # state initialization - initial state is equal to measurements
+        m = 0
+        try:
+            for i in range(len(max_points[0])):
+                if max_points[0][i][0] > 0 and max_points[0][i][1] > 0:
+                    x[m] = [max_points[0][i][0], max_points[0][i][1],
+                            0, 0, 0, 0]
+                    m += 1
+        # required for django runserver tests
+        except IndexError:
+            index_error = 1
+
+        est_number = 0
+        # number of estimates at the start
+        try:
+            for point in max_points[::][0]:
+                if point[0] > 0 and point[1] > 0:
+                    est_number += 1
+        except IndexError:
+            index_error = 1
+
+        # history of new objects appearance
+        new_obj_hist = [[]]
+        # difference between position of n-th object in m-1 frame and position
+        # of the same object in m frame
+        diff_2 = [[]]
+        # for how many frames given object was detected
+        frames_detected = []
+        # x and y posterior positions (estimates) for drawnings
+        x_est = [[] for i in range(stop_frame)]
+        y_est = [[] for i in range(stop_frame)]
+
+        # variable for counting frames where object has no measurement
+        striked_tracks = np.zeros(stop_frame)
+        removed_states = []
+        new_detection = []
+        ff_nr = 0  # frame number
+
+        self._progress_bar.label = '3/4: Generating position estimates..'
+        self._progress_bar.value = 0
+
+        # kalman filter loop
+        for frame in range(stop_frame):
+            self._progress_bar.value = 100 * (ff_nr / stop_frame)
+            # measurements in one frame
+            try:
+                frame_measurements = max_points[::][frame]
+            except IndexError:
+                index_error = 1
+
+            measurements = []
+            # make list of lists, not tuples; don't take zeros,
+            # assuming it's image
+            if not index_error:
+                for meas in frame_measurements:
+                    if meas[0] > 0 and meas[1] > 0:
+                        measurements.append([meas[0], meas[1]])
+            # count prior
+            for i in range(est_number):
+                x[i][::] = dot(F, x[i][::])
+            P = dot(F, P).dot(F.T) + Q
+            S = dot(H, P).dot(H.T) + R
+            K = dot(P, H.T).dot(inv(S))
+            ##################################################################
+            # prepare for update phase -> get (prior - measurement) assignment
+            posterior_list = []
+            for i in range(est_number):
+                if not np.isnan(x[i][0]) and not np.isnan(x[i][1]):
+                    posterior_list.append(i)
+                    # print(i)
+            # print(posterior_list)
+            #
+            # print('state\n', x[0:est_number, 0:2])
+            # print('\n')
+            #    temp_matrix = np.array(x[0:est_number, 0:2])
+            try:
+                temp_matrix = np.array(x[posterior_list, 0:2])
+                temp_matrix = np.append(temp_matrix, measurements, axis=0)
+            except ValueError:
+                value_error = 1
+
+            # print(temp_matrix)
+            distance = pdist(temp_matrix, 'euclidean')  # returns vector
+
+            # make square matrix out of vector
+            distance = squareform(distance)
+            temp_distance = distance
+            # remove elements that are repeated - (0-1), (1-0) etc.
+            #    distance = distance[est_number::, 0:est_number]
+            distance = distance[0:len(posterior_list), len(posterior_list)::]
+
+            # munkres
+            row_index, column_index = linear_sum_assignment(distance)
+            final_cost = distance[row_index, column_index].sum()
+            unit_cost = []
+            index = []
+            for i in range(len(row_index)):
+                # index(object, measurement)
+                index.append([row_index[i], column_index[i]])
+                unit_cost.append(distance[row_index[i], column_index[i]])
+
+            ##################################################################
+            # index correction - take past states into account
+            removed_states.sort()
+            for removed_index in removed_states:
+                for i in range(len(index)):
+                    if index[i][0] >= removed_index:
+                        index[i][0] += 1
+            ##################################################################
+            # find object to reject
+            state_list = [index[i][0] for i in range(len(index))]
+            reject = np.ones(len(posterior_list))
+            i = 0
+            for post_index in posterior_list:
+                if post_index not in state_list:
+                    reject[i] = 0
+                i += 1
+            # check if distance (residual) isn't to high for assignment
+            for i in range(len(unit_cost)):
+                if unit_cost[i] > 20:
+                    print('cost to high, removing', i)
+                    reject[i] = 0
+
+            ##################################################################
+            # update phase
+            for i in range(len(index)):
+                # find object that should get measurement next
+                # count residual y: measurement - state
+                if index[i][1] >= 0:
+                    y = np.array([measurements[index[i][1]] -
+                                  dot(H, x[index[i][0], ::])])
+                    # posterior
+                    x[index[i][0], ::] = x[index[i][0], ::] + dot(K, y.T).T
+                    # append new positions
+                #        if x[i][0] and x[i][1]:
+                x_est[index[i][0]].append([x[index[i][0], 0]])
+                y_est[index[i][0]].append([x[index[i][0], 1]])
+            # posterior state covariance matrix
+            P = dot(np.identity(6) - dot(K, H), P)
+            print('posterior\n', x[0:est_number, 0:2])
+            ##################################################################
+            # find new objects and create new states for them
+            new_index = []
+            measurement_indexes = []
+            for i in range(len(index)):
+                if index[i][1] >= 0.:
+                    # measurements that have assignment
+                    measurement_indexes.append(index[i][1])
+
+            for i in range(len(measurements)):
+                if i not in measurement_indexes:
+                    # find measurements that don't have assignments
+                    new_index.append(i)
+            new_detection.append([measurements[new_index[i]]
+                                  for i in range(len(new_index))])
+            # for every detections in the last frame
+            for i in range(len(new_detection[len(new_detection) - 1])):
+                if new_detection[frame][i] and \
+                                new_detection[frame][i][0] > 380:
+                    x[est_number, ::] = [new_detection[frame][i][0],
+                                         new_detection[frame][i][1], 0, 0, 0,
+                                         0]
+                    est_number += 1
+                    # print('state added', est_number)
+                    # print('new posterior\n', x[0:est_number, 0:2])
+            ##################################################################
+            # find states without measurements and remove them
+            no_track_list = []
+            for i in range(len(reject)):
+                if not reject[i]:
+                    no_track_list.append(posterior_list[i])
+                    #    print('no_trk_list', no_track_list)
+            for track in no_track_list:
+                if track >= 0:
+                    striked_tracks[track] += 1
+                    print('track/strikes', track, striked_tracks[track])
+            for i in range(len(striked_tracks)):
+                if striked_tracks[i] >= 1:
+                    x[i, ::] = [None, None, None, None, None, None]
+                    if i not in removed_states:
+                        removed_states.append(i)
+                    print('state_removed', i)
+                ff_nr += 1
+                # print(removed_states)
+                # print(index)
+        return x_est, y_est, est_number
+
+    def _plot_points(self, vid_frag, max_points, x_est, y_est, est_number):
+        self._progress_bar.label = '4/4: Plotting - measurements..'
+        self._progress_bar.value = 0
+        # plot raw measurements
+        for frame_positions in max_points:
+            for pos in frame_positions:
+                plt.plot(pos[0], pos[1], 'r.')
+        # try:
+        plt.axis([0, vid_frag[0].shape[1], vid_frag[0].shape[0], 0])
+        # except IndexError:
+        #     index_error = 1
+        plt.xlabel('width [px]')
+        plt.ylabel('height [px]')
+        plt.title('Objects raw measurements')
+        ######################################################################
+        # image border - 10 px
+        x_max = vid_frag[0].shape[1] - 10
+        y_max = vid_frag[0].shape[0] - 10
+
+        self._progress_bar.label = '4/4: Plotting - estimates..'
+        self._progress_bar.value = 0
+        i = 0
+        # plot estimated trajectories
+        for ind in range(est_number):
+            self._progress_bar.value = 100 * (i / est_number)
+            i += 1
+            # if estimate exists
+            if len(x_est[ind]):
+                for pos in range(len(x_est[ind])):
+                    # don't draw near 0 points and near max points
+                    if not np.isnan(x_est[ind][pos][0]) and \
+                                    x_est[ind][pos][0] > 10 and \
+                                    y_est[ind][pos][0] > 10 and \
+                                    x_est[ind][pos][0] < x_max - 10 and \
+                                    y_est[ind][pos][0] < y_max - 10:
+                        plt.plot(x_est[ind][pos][0], y_est[ind][pos][0], 'g.')
+                        # plt.plot(x_est[ind][::], y_est[ind][::], 'g-')
+        # print(frame)
+        #  [xmin xmax ymin ymax]
+        # try:
+        plt.axis([0, vid_frag[0].shape[1], vid_frag[0].shape[0], 0])
+        # except IndexError:
+        #     index_error = 1
+        plt.xlabel('width [px]')
+        plt.ylabel('height [px]')
+        plt.title('Objects estimated trajectories')
+        plt.grid()
+        plt.show()
+
     def __processFrame(self, frame):
         """
         Do some processing to the frame and return the result frame
@@ -203,10 +483,9 @@ class MultipleBlobDetection(BaseWidget):
         i = 0
         bin_frames = []
         # preprocess image loop
+        self._progress_bar.label = '1/4: Creating BW frames..'
+        self._progress_bar.value = 0
         for frame in vid_fragment:
-            # if cv2.waitKey(15) & 0xFF == ord('q'):
-            #     break
-            # gray_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
             gray_frame = self.__color_channel(frame)
             for m in range(height):  # height
                 for n in range(width):  # width
@@ -221,27 +500,28 @@ class MultipleBlobDetection(BaseWidget):
                                      cv2.THRESH_BINARY)
             # frame_thresh1 = otsu_binary(cl1)
             bin_frames.append(th1)
-            if i % 10 == 0:
-                print(i)
+            self._progress_bar.value = 100*(i/len(vid_fragment))
             i += 1
         ######################################################################
         i = 0
         maxima_points = []
         # gather measurements loop
+
+        self._progress_bar.label = '2/4: Finding local maximas..'
+        self._progress_bar.value = 0
         for frame in bin_frames:
             frame = self.__morphological(frame)
             # get local maximas of filtered image per frame
             maxima_points.append(local_maxima(frame))
-            if i % 10 == 0:
-                print(i)
+            self._progress_bar.value = 100 * (i / len(bin_frames))
             i += 1
 
-
-        x_est, y_est, est_number = kalman(maxima_points, stop_frame,
-                                          vid_fragment)
+        x_est, y_est, est_number = self._kalman(maxima_points, stop_frame,
+                                                vid_fragment)
 
         print('\nFinal estimates number:', est_number)
-        plot_points(vid_fragment, maxima_points, x_est, y_est, est_number)
+        self._plot_points(vid_fragment, maxima_points, x_est, y_est,
+                          est_number)
         print('EOF - DONE')
 
 # Execute the application
