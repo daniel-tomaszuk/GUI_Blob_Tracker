@@ -27,6 +27,12 @@ class MultipleBlobDetection(BaseWidget):
         self._threshold_box = ControlCheckBox('Threshold')
         self._threshold = ControlSlider('Binary Threshold', 114, 0, 255)
 
+        self._roi_x_min = ControlSlider('ROI x top', 0, 0, 1000)
+        self._roi_x_max = ControlSlider('ROI x bottom', 1000, 0, 1000)
+
+        self._roi_y_min = ControlSlider('ROI y left', 0, 0, 1000)
+        self._roi_y_max = ControlSlider('ROI y right', 1000, 0, 1000)
+
         # self._blobsize = ControlSlider('Minimum blob size', 100, 100, 2000)
         self._player = ControlPlayer('Player')
         self._runbutton = ControlButton('Run')
@@ -38,7 +44,7 @@ class MultipleBlobDetection(BaseWidget):
         self._color_list.add_item('Green Image Channel', 1)
         self._color_list.add_item('Blue Image Channel', 0)
 
-        self._clahe = ControlCheckBox('CLAHE - Adaptive contrast correction')
+        self._clahe = ControlCheckBox('CLAHE      ')
         self._dilate = ControlCheckBox('Morphological Dilation')
         self._dilate_type = ControlCombo('Dilation Kernel Type')
         self._dilate_type.add_item('RECTANGLE', cv2.MORPH_RECT)
@@ -83,8 +89,8 @@ class MultipleBlobDetection(BaseWidget):
         self.formset = [
             ('_videofile', '_outputfile'),
             ('_start_frame', '_stop_frame'),
-            ('_color_list', '_clahe'),
-            ('_threshold_box', '_threshold'),
+            ('_color_list', '_clahe', '_roi_x_min', '_roi_y_min'),
+            ('_threshold_box', '_threshold', '_roi_x_max', '_roi_y_max'),
             ('_dilate', '_erode', '_open', '_close'),
             ('_dilate_type', '_erode_type', '_open_type', '_close_type'),
             ('_dilate_size', '_erode_size', '_open_size', '_close_size'),
@@ -93,6 +99,12 @@ class MultipleBlobDetection(BaseWidget):
             '_progress_bar',
             '_player'
         ]
+
+    def __videoFileSelectionEvent(self):
+        """
+        When the videofile is selected instanciate the video in the player
+        """
+        self._player.value = self._videofile.value
 
     def __color_channel(self, frame):
         """
@@ -159,11 +171,33 @@ class MultipleBlobDetection(BaseWidget):
             frame[frame < 0] = 0
         return frame
 
-    def __videoFileSelectionEvent(self):
+    def __roi(self, frame):
         """
-        When the videofile is selected instanciate the video in the player
+        Define image region of interest.
         """
-        self._player.value = self._videofile.value
+        # ROI
+        height, width = frame.shape
+        self._roi_x_max.min = int(height / 2)
+        self._roi_x_max.max = height
+        self._roi_y_max.min = int(width / 2)
+        self._roi_y_max.max = width
+
+        self._roi_x_min.min = 0
+        self._roi_x_min.max = int(height / 2)
+        self._roi_y_min.min = 0
+        self._roi_y_min.max = int(width / 2)
+        # x axis
+        frame[:int(self._roi_x_min.value)][::] = 255
+        frame[int(self._roi_x_max.value)::][::] = 255
+        # y axis
+        for m in range(height):  # height
+            for n in range(width):  # width
+                if n > self._roi_y_max.value or n < self._roi_y_min.value:
+                    frame[m][n] = 255
+
+        # frame[0::][:int(self._roi_y_min.value)] = 255
+        # frame[0::][int(self._roi_y_max.value):] = 255
+        return frame
 
     def _kalman(self, max_points, stop_frame, vid_fragment):
         """
@@ -451,14 +485,21 @@ class MultipleBlobDetection(BaseWidget):
         """
         # frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
         frame = self.__color_channel(frame)
+
         if self._clahe.value:
             clahe = cv2.createCLAHE(clipLimit=8.0, tileGridSize=(8, 8))
             frame = clahe.apply(frame)
+
+        frame = self.__roi(frame)
+
         if self._threshold_box.value:
             ret, frame = cv2.threshold(frame, self._threshold.value, 255,
                                        cv2.THRESH_BINARY)
             frame = self.__morphological(frame)
         return frame
+
+
+
 
     def __runEvent(self):
         """
@@ -487,15 +528,13 @@ class MultipleBlobDetection(BaseWidget):
         self._progress_bar.value = 0
         for frame in vid_fragment:
             gray_frame = self.__color_channel(frame)
-            for m in range(height):  # height
-                for n in range(width):  # width
-                    if n > 385 or m > 160:
-                        gray_frame[m][n] = 120
-
             # create a CLAHE object (Arguments are optional)
             if self._clahe.value:
                 clahe = cv2.createCLAHE(clipLimit=8.0, tileGridSize=(8, 8))
                 gray_frame = clahe.apply(gray_frame)
+
+            # ROI
+            gray_frame = self.__roi(gray_frame)
             ret, th1 = cv2.threshold(gray_frame, self._threshold.value, 255,
                                      cv2.THRESH_BINARY)
             # frame_thresh1 = otsu_binary(cl1)
