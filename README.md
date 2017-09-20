@@ -13,4 +13,4 @@ It is a must to use LoG for now, because algorithm looks for local image maximas
 which LoG generates.
 
 GUI uses OpenCV for image processing. As output, program generates indexed blob trajectories.
-The example of multi blob video is attached in the project folder: CIMG4027.MOV
+The example of multi blob video is attached in the project folder: CIMG4027.MOV. Parameters for CIMG4027.MOV video are visible in the 'parameters.png' picture. 
