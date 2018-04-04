@@ -6,7 +6,7 @@ import pyforms
 from pyforms import BaseWidget
 from pyforms.Controls import ControlText, ControlButton, ControlSlider, ControlFile, \
     ControlPlayer, ControlCheckBox, ControlCombo, ControlProgress
-from .functions import *
+from functions import *
 
 
 class MultipleBlobDetection(BaseWidget):
