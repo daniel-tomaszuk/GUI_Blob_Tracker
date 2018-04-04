@@ -1,17 +1,15 @@
 import numpy as np
-import cv2
 import sys
 import math
+
+import cv2
 import matplotlib.pyplot as plt
-from numpy import ma  # masked arrays
-from scipy.spatial.distance import pdist
-from scipy.spatial.distance import squareform
+from numpy import dot, ma  # masked arrays
+from scipy.spatial.distance import squareform, pdist
 from scipy.linalg import inv
-from numpy import dot
 # from filterpy.kalman import KalmanFilter
 # from filterpy.common import Q_discrete_white_noise
 # from munkres import Munkres, DISALLOWED
-from scipy.optimize import linear_sum_assignment
 
 
 def otsu_binary(img):
@@ -660,6 +658,7 @@ def plot_points(vid_frag, max_points, x_est, y_est, est_number):
 # print('\nFinal estimates number:', est_number)
 # print('\nTrajectories drawing...')
 # print('EOF - DONE')
+
 
 if __name__ == "__main__":
     pass

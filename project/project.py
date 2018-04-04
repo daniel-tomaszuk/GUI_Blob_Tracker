@@ -1,18 +1,12 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-from pyforms import BaseWidget
-from pyforms.Controls import ControlText
-from pyforms.Controls import ControlButton
-from pyforms.Controls import ControlSlider
-from pyforms.Controls import ControlFile
-from pyforms.Controls import ControlPlayer
-from pyforms.Controls import ControlCheckBox
-from pyforms.Controls import ControlCombo
-from pyforms.Controls import ControlProgress
-import pyforms
 import cv2
-from functions import *
+import pyforms
+from pyforms import BaseWidget
+from pyforms.Controls import ControlText, ControlButton, ControlSlider, ControlFile, \
+    ControlPlayer, ControlCheckBox, ControlCombo, ControlProgress
+from .functions import *
 
 
 class MultipleBlobDetection(BaseWidget):
@@ -499,8 +493,6 @@ class MultipleBlobDetection(BaseWidget):
         return frame
 
 
-
-
     def __runEvent(self):
         """
         After setting the best parameters run the full algorithm
@@ -562,6 +554,7 @@ class MultipleBlobDetection(BaseWidget):
         self._plot_points(vid_fragment, maxima_points, x_est, y_est,
                           est_number)
         print('EOF - DONE')
+
 
 # Execute the application
 if __name__ == "__main__":
