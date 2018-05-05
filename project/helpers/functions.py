@@ -1,7 +1,10 @@
+#!/usr/bin/python
+# -*- coding: utf-8 -*-
 
 import sys
 
 import cv2
+import numpy as np
 import matplotlib.pyplot as plt
 from numpy import dot, ma  # masked arrays
 from scipy.linalg import inv
@@ -219,33 +222,34 @@ def local_maxima(gray_image):
     return result
 
 
-def munkres(matrix):
-    """
-    Implementation of Hungarian algorithm for solving the Assignment Problem
-    between measurements and estimates in multivariate linear kalman filter
-    Example of usage:
-        indexes = munkres(matrix)
-    :param matrix: input matrix - should be a square cost matrix
-    :return: index_list of tuples with assigned indexes,
-             cost_list of assignment between indexes
-    """
-
-    # print_matrix(cost_matrix, msg='Cost matrix:')
-    m = Munkres()
-
-    indexes = m.compute(matrix)
-    # print_matrix(matrix, msg='Highest profit through this matrix:')
-    total = 0
-    index_list = []
-    cost_list = []
-    for row, column in indexes:
-        value = matrix[row][column]
-        cost_list.append(value)
-        total += value
-        index_list.append((row, column))
-        # print('({}, {}) -> {}'.format(row, column, value))
-    # print('total profit={}'.format(total))
-    return index_list, cost_list
+# def munkres(matrix):
+#     """
+#     Implementation of Hungarian algorithm for solving the Assignment Problem
+#     between measurements and estimates in multivariate linear kalman filter
+#     Example of usage:
+#         indexes = munkres(matrix)
+#     :param matrix: input matrix - should be a square cost matrix
+#     :return: index_list of tuples with assigned indexes,
+#              cost_list of assignment between indexes
+#     """
+#
+#     # print_matrix(cost_matrix, msg='Cost matrix:')
+#
+#     m = Munkres()
+#
+#     indexes = m.compute(matrix)
+#     # print_matrix(matrix, msg='Highest profit through this matrix:')
+#     total = 0
+#     index_list = []
+#     cost_list = []
+#     for row, column in indexes:
+#         value = matrix[row][column]
+#         cost_list.append(value)
+#         total += value
+#         index_list.append((row, column))
+#         # print('({}, {}) -> {}'.format(row, column, value))
+#     # print('total profit={}'.format(total))
+#     return index_list, cost_list
 
 
 def pair(prior, measurements):

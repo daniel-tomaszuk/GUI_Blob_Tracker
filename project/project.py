@@ -7,11 +7,13 @@ import matplotlib.pyplot as plt
 import pyforms
 from numpy import dot
 from pyforms import BaseWidget
-from pyforms.Controls import ControlButton, ControlText, ControlSlider, ControlFile, \
+from pyforms.Controls import ControlButton, ControlText, ControlSlider, \
+    ControlFile, \
     ControlPlayer, ControlCheckBox, ControlCombo, ControlProgress
 from scipy.spatial.distance import squareform, pdist
 
-from helpers.functions import get_log_kernel, inv, linear_sum_assignment, local_maxima, \
+from helpers.functions import get_log_kernel, inv, linear_sum_assignment, \
+    local_maxima, \
     select_frames
 
 
@@ -79,11 +81,13 @@ class MultipleBlobDetection(BaseWidget):
         self._progress_bar = ControlProgress('Progress Bar')
 
         # Define the function that will be called when a file is selected
-        self._videofile.changed_event = self.__videoFileSelectionEvent
+        self._videofile.changed_event = self.__video_file_selection_event
         # Define the event that will be called when the run button is processed
-        self._runbutton.value = self.__runEvent
+        self._runbutton.value = self.__run_event
         # Define the event called before showing the image in the player
-        self._player.process_frame_event = self.__processFrame
+        self._player.process_frame_event = self.__process_frame
+
+        self._error_massages = {}
 
         # Define the organization of the Form Controls
         self.formset = [
@@ -100,7 +104,16 @@ class MultipleBlobDetection(BaseWidget):
             '_player'
         ]
 
-    def __videoFileSelectionEvent(self):
+    def _parameters_check(self):
+        self._error_massages = {}
+        if not self._player.value:
+            self._error_massages['video'] = 'No video specified'
+        elif not self._start_frame.value or not self._stop_frame.value or \
+                self._start_frame.value >= self._stop_frame.value or \
+                int(self._start_frame.value) < 0 or int(self._stop_frame.value) < 0:
+            self._error_massages['frames'] = 'Wrong start/end frame number'
+
+    def __video_file_selection_event(self):
         """
         When the videofile is selected instanciate the video in the player
         """
@@ -144,7 +157,7 @@ class MultipleBlobDetection(BaseWidget):
         _LoG_kernel = get_log_kernel(self._LoG_size.value,
                                      int(self._LoG_size.value * 0.5))
         return _opening_kernel, _close_kernel, _erosion_kernel, \
-            _dilate_kernel, _LoG_kernel
+               _dilate_kernel, _LoG_kernel
 
     def __morphological(self, frame):
         """
@@ -153,7 +166,7 @@ class MultipleBlobDetection(BaseWidget):
         :return: preprocessed frame.
         """
         opening_kernel, close_kernel, erosion_kernel, \
-            dilate_kernel, log_kernel = self.__create_kernels()
+        dilate_kernel, log_kernel = self.__create_kernels()
         # prepare image - morphological operations
         if self._erode.value:
             frame = cv2.erode(frame, erosion_kernel, iterations=1)
@@ -251,7 +264,6 @@ class MultipleBlobDetection(BaseWidget):
                     x[m] = [max_points[0][i][0], max_points[0][i][1],
                             0, 0, 0, 0]
                     m += 1
-        # required for django runserver tests
         except IndexError:
             index_error = 1
 
@@ -479,7 +491,7 @@ class MultipleBlobDetection(BaseWidget):
         plt.grid()
         plt.show()
 
-    def __processFrame(self, frame):
+    def __process_frame(self, frame):
         """
         Do some processing to the frame and return the result frame
         """
@@ -499,67 +511,75 @@ class MultipleBlobDetection(BaseWidget):
         return frame
 
 
-    def __runEvent(self):
+    def __run_event(self):
         """
         After setting the best parameters run the full algorithm
         """
-        if not self._start_frame.value or not self._stop_frame.value or \
-                self._start_frame.value >= self._stop_frame.value:
-            raise ValueError('Wrong start or stop frame!')
-        start_frame = int(self._start_frame.value)
-        stop_frame = int(self._stop_frame.value)
-        # pass cv2.VideoCapture object, not string
-        # my_video = self._player.value
-        video = self._player.value
-        # self._load_bar.__init__('Processing..')
-        vid_fragment = select_frames(video, start_frame, stop_frame)
-        try:
-            height = vid_fragment[0].shape[0]
-            width = vid_fragment[0].shape[1]
-        except IndexError:
-            raise IndexError('No video loaded. Check video path.')
 
-        i = 0
-        bin_frames = []
-        # preprocess image loop
-        self._progress_bar.label = '1/4: Creating BW frames..'
-        self._progress_bar.value = 0
-        for frame in vid_fragment:
-            gray_frame = self.__color_channel(frame)
-            # create a CLAHE object (Arguments are optional)
-            if self._clahe.value:
-                clahe = cv2.createCLAHE(clipLimit=8.0, tileGridSize=(8, 8))
-                gray_frame = clahe.apply(gray_frame)
+        self._parameters_check()
+        if not len(self._error_massages):
+            start_frame = int(self._start_frame.value)
+            stop_frame = int(self._stop_frame.value)
+            # pass cv2.VideoCapture object, not string
+            # my_video = self._player.value
+            video = self._player.value
+            # self._load_bar.__init__('Processing..')
+            vid_fragment = select_frames(video, start_frame, stop_frame)
+            try:
+                height = vid_fragment[0].shape[0]
+                width = vid_fragment[0].shape[1]
+            except IndexError:
+                self._error_massages['video'] = 'No video specified'
 
-            # ROI
-            gray_frame = self.__roi(gray_frame)
-            ret, th1 = cv2.threshold(gray_frame, self._threshold.value, 255,
-                                     cv2.THRESH_BINARY)
-            # frame_thresh1 = otsu_binary(cl1)
-            bin_frames.append(th1)
-            self._progress_bar.value = 100*(i/len(vid_fragment))
-            i += 1
-        ######################################################################
-        i = 0
-        maxima_points = []
-        # gather measurements loop
+            i = 0
+            bin_frames = []
+            # preprocess image loop
+            self._progress_bar.label = '1/4: Creating BW frames..'
+            self._progress_bar.value = 0
+            for frame in vid_fragment:
+                gray_frame = self.__color_channel(frame)
+                # create a CLAHE object (Arguments are optional)
+                if self._clahe.value:
+                    clahe = cv2.createCLAHE(clipLimit=8.0, tileGridSize=(8, 8))
+                    gray_frame = clahe.apply(gray_frame)
 
-        self._progress_bar.label = '2/4: Finding local maximas..'
-        self._progress_bar.value = 0
-        for frame in bin_frames:
-            frame = self.__morphological(frame)
-            # get local maximas of filtered image per frame
-            maxima_points.append(local_maxima(frame))
-            self._progress_bar.value = 100 * (i / len(bin_frames))
-            i += 1
+                # ROI
+                gray_frame = self.__roi(gray_frame)
+                ret, th1 = cv2.threshold(gray_frame, self._threshold.value, 255,
+                                         cv2.THRESH_BINARY)
+                # frame_thresh1 = otsu_binary(cl1)
+                bin_frames.append(th1)
+                self._progress_bar.value = 100 * (i / len(vid_fragment))
+                i += 1
 
-        x_est, y_est, est_number = self._kalman(maxima_points, stop_frame,
-                                                vid_fragment)
+            i = 0
+            maxima_points = []
+            # gather measurements loop
 
-        print('\nFinal estimates number:', est_number)
-        self._plot_points(vid_fragment, maxima_points, x_est, y_est,
-                          est_number)
-        print('EOF - DONE')
+            self._progress_bar.label = '2/4: Finding local maximas..'
+            self._progress_bar.value = 0
+            for frame in bin_frames:
+                frame = self.__morphological(frame)
+                # get local maximas of filtered image per frame
+                maxima_points.append(local_maxima(frame))
+                self._progress_bar.value = 100 * (i / len(bin_frames))
+                i += 1
+
+            try:
+                x_est, y_est, est_number = self._kalman(maxima_points,
+                                                        stop_frame,
+                                                        vid_fragment)
+                print('\nFinal estimates number:', est_number)
+                self._plot_points(vid_fragment, maxima_points, x_est,
+                                  y_est, est_number)
+            except IndexError:
+                self._progress_bar.label += ' ' + 'ERROR while generating estimates. ' \
+                                                  'Try adjusting parameters.'
+
+        else:
+            self._progress_bar.label = 'WRONG PARAMETERS:'
+            for key in self._error_massages:
+                self._progress_bar.label += ' ' + self._error_massages[key]
 
 
 # Execute the application
