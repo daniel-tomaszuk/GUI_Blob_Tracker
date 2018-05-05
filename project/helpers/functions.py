@@ -1,6 +1,5 @@
-import numpy as np
+
 import sys
-import math
 
 import cv2
 import matplotlib.pyplot as plt
@@ -8,6 +7,7 @@ from numpy import dot, ma  # masked arrays
 from scipy.linalg import inv
 from scipy.spatial.distance import squareform, pdist
 from scipy.optimize import linear_sum_assignment
+
 # from filterpy.kalman import KalmanFilter
 # from filterpy.common import Q_discrete_white_noise
 # from munkres import Munkres, DISALLOWED
