@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 import pyforms
 from numpy import dot
 from pyforms import BaseWidget
-from pyforms.Controls import ControlButton, ControlText, ControlSlider, \
+from pyforms.controls import ControlButton, ControlText, ControlSlider, \
     ControlFile, ControlPlayer, ControlCheckBox, ControlCombo, ControlProgress
 from scipy.spatial.distance import squareform, pdist
 
@@ -26,14 +26,14 @@ class MultipleBlobDetection(BaseWidget):
         self._outputfile = ControlText('Results output file')
 
         self._threshold_box = ControlCheckBox('Threshold')
-        self._threshold = ControlSlider('Binary Threshold', 114, 0, 255)
-
-        self._roi_x_min = ControlSlider('ROI x top', 0, 0, 1000)
-        self._roi_x_max = ControlSlider('ROI x bottom', 1000, 0, 1000)
-
-        self._roi_y_min = ControlSlider('ROI y left', 0, 0, 1000)
-        self._roi_y_max = ControlSlider('ROI y right', 1000, 0, 1000)
-
+        self._threshold = ControlSlider('Binary Threshold')
+        self._threshold.value = 114
+        self._threshold.min = 1
+        self._threshold.max = 255
+        self._roi_x_min = ControlSlider('ROI x top')
+        self._roi_x_max = ControlSlider('ROI x bottom')
+        self._roi_y_min = ControlSlider('ROI y left')
+        self._roi_y_max = ControlSlider('ROI y right')
         # self._blobsize = ControlSlider('Minimum blob size', 100, 100, 2000)
         self._player = ControlPlayer('Player')
         self._runbutton = ControlButton('Run')
@@ -51,31 +51,50 @@ class MultipleBlobDetection(BaseWidget):
         self._dilate_type.add_item('RECTANGLE', cv2.MORPH_RECT)
         self._dilate_type.add_item('ELLIPSE', cv2.MORPH_ELLIPSE)
         self._dilate_type.add_item('CROSS', cv2.MORPH_CROSS)
-        self._dilate_size = ControlSlider('Dilation Kernel Size', 3, 1, 10)
+        self._dilate_size = ControlSlider('Dilation Kernel Size', default=3,
+                                          min=1, max=10)
+        self._dilate_size.value = 5
+        self._dilate_size.min = 1
+        self._dilate_size.max = 10
 
         self._erode = ControlCheckBox('Morphological Erosion')
         self._erode_type = ControlCombo('Erode Kernel Type')
         self._erode_type.add_item('RECTANGLE', cv2.MORPH_RECT)
         self._erode_type.add_item('ELLIPSE', cv2.MORPH_ELLIPSE)
         self._erode_type.add_item('CROSS', cv2.MORPH_CROSS)
-        self._erode_size = ControlSlider('Erode Kernel Size', 5, 1, 10)
+
+        self._erode_size = ControlSlider('Erode Kernel Size')
+        self._erode_size.value = 5
+        self._erode_size.min = 1
+        self._erode_size.max = 10
 
         self._open = ControlCheckBox('Morphological Opening')
         self._open_type = ControlCombo('Open Kernel Type')
         self._open_type.add_item('RECTANGLE', cv2.MORPH_RECT)
         self._open_type.add_item('ELLIPSE', cv2.MORPH_ELLIPSE)
         self._open_type.add_item('CROSS', cv2.MORPH_CROSS)
-        self._open_size = ControlSlider('Open Kernel Size', 19, 1, 40)
+
+        self._open_size = ControlSlider('Open Kernel Size')
+        self._open_size.value = 20
+        self._open_size.min = 1
+        self._open_size.max = 40
 
         self._close = ControlCheckBox('Morphological Closing')
         self._close_type = ControlCombo('Close Kernel Type')
         self._close_type.add_item('RECTANGLE', cv2.MORPH_RECT)
         self._close_type.add_item('ELLIPSE', cv2.MORPH_ELLIPSE)
         self._close_type.add_item('CROSS', cv2.MORPH_CROSS)
-        self._close_size = ControlSlider('Close Kernel Size', 19, 1, 40)
+        self._close_size = ControlSlider('Close Kernel Size', default=19,
+                                         min=1, max=40)
+        self._close_size.value = 20
+        self._close_size.min = 1
+        self._close_size.max = 40
 
         self._LoG = ControlCheckBox('LoG - Laplacian of Gaussian')
-        self._LoG_size = ControlSlider('LoG Kernel Size', 30, 1, 60)
+        self._LoG_size = ControlSlider('LoG Kernel Size')
+        self._LoG_size.value = 20
+        self._LoG_size.min = 1
+        self._LoG_size.max = 60
 
         self._progress_bar = ControlProgress('Progress Bar')
 
@@ -101,6 +120,7 @@ class MultipleBlobDetection(BaseWidget):
             ('_runbutton', '_progress_bar'),
             '_player'
         ]
+        self.is_roi_set = 0
 
     def _parameters_check(self):
         self._error_massages = {}
@@ -140,22 +160,42 @@ class MultipleBlobDetection(BaseWidget):
         :return: _opening_kernel, _close_kernel, _erosion_kernel, \
             _dilate_kernel, _LoG_kernel
         """
-        _opening_kernel = cv2.getStructuringElement(self._open_type.value,
-                                                    (self._open_size.value,
-                                                     self._open_size.value))
-        _close_kernel = cv2.getStructuringElement(self._close_type.value,
-                                                  (self._close_size.value,
-                                                   self._close_size.value))
-        _erosion_kernel = cv2.getStructuringElement(self._erode_type.value,
-                                                    (self._erode_size.value,
-                                                     self._erode_size.value))
-        _dilate_kernel = cv2.getStructuringElement(self._dilate_type.value,
-                                                   (self._dilate_size.value,
-                                                    self._dilate_size.value))
-        _LoG_kernel = get_log_kernel(self._LoG_size.value,
-                                     int(self._LoG_size.value * 0.5))
+        if self._open_type.value and self._open_size.value:
+            _opening_kernel = cv2.getStructuringElement(self._open_type.value,
+                                                        (self._open_size.value,
+                                                         self._open_size.value))
+        else:
+            _opening_kernel = None
+
+        if self._close_type.value and self._close_size.value:
+            _close_kernel = cv2.getStructuringElement(self._close_type.value,
+                                                      (self._close_size.value,
+                                                       self._close_size.value))
+        else:
+            _close_kernel = None
+
+        if self._erode_type.value and self._erode_size.value:
+            _erosion_kernel = cv2.getStructuringElement(self._erode_type.value,
+                                                        (self._erode_size.value,
+                                                         self._erode_size.value))
+        else:
+            _erosion_kernel = None
+
+        if self._dilate_type.value and self._dilate_size.value:
+            _dilate_kernel = cv2.getStructuringElement(self._dilate_type.value,
+                                                       (self._dilate_size.value,
+                                                        self._dilate_size.value))
+        else:
+            _dilate_kernel = None
+
+        if self._LoG.value and self._LoG_size.value:
+            _LoG_kernel = get_log_kernel(self._LoG_size.value,
+                                         int(self._LoG_size.value * 0.5))
+        else:
+            _LoG_kernel = None
+
         return _opening_kernel, _close_kernel, _erosion_kernel, \
-               _dilate_kernel, _LoG_kernel
+            _dilate_kernel, _LoG_kernel
 
     def __morphological(self, frame):
         """
@@ -197,6 +237,11 @@ class MultipleBlobDetection(BaseWidget):
         self._roi_x_min.max = int(height / 2)
         self._roi_y_min.min = 0
         self._roi_y_min.max = int(width / 2)
+
+        if not self.is_roi_set:
+            self._roi_x_max.value = height
+            self._roi_y_max.value = width
+
         # x axis
         frame[:int(self._roi_x_min.value)][::] = 255
         frame[int(self._roi_x_max.value)::][::] = 255
@@ -569,6 +614,12 @@ class MultipleBlobDetection(BaseWidget):
                 x_est, y_est, est_number = self._kalman(maxima_points,
                                                         stop_frame,
                                                         vid_fragment)
+                # A new instance of the VideoWindow is opened and shown to the user.
+                win = VideoWindow()
+                self.test = 'parent test!!!'
+                win.parent = self
+                win.show()
+
                 print('\nFinal estimates number:', est_number)
                 self._plot_points(vid_fragment, maxima_points, x_est,
                                   y_est, est_number)
