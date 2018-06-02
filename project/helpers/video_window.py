@@ -1,6 +1,6 @@
 import pyforms
 from pyforms import BaseWidget
-from pyforms.Controls import ControlPlayer
+from pyforms.controls import ControlPlayer
 
 
 class VideoWindow(BaseWidget):
@@ -12,8 +12,6 @@ class VideoWindow(BaseWidget):
         self._player = ControlPlayer('Player')
 
         self.formset = ['_player']
-
-        print('video from other self: ', self.test)
 
 
 if __name__ == "__main__":   pyforms.start_app(VideoWindow)
