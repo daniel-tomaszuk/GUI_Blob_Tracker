@@ -99,8 +99,7 @@ class MultipleBlobDetection(BaseWidget):
             ('_dilate_type', '_erode_type', '_open_type', '_close_type'),
             ('_dilate_size', '_erode_size', '_open_size', '_close_size'),
             ('_LoG', '_LoG_size'),
-            '_runbutton',
-            '_progress_bar',
+            ('_runbutton', '_progress_bar'),
             '_player'
         ]
 
