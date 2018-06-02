@@ -8,13 +8,12 @@ import pyforms
 from numpy import dot
 from pyforms import BaseWidget
 from pyforms.Controls import ControlButton, ControlText, ControlSlider, \
-    ControlFile, \
-    ControlPlayer, ControlCheckBox, ControlCombo, ControlProgress
+    ControlFile, ControlPlayer, ControlCheckBox, ControlCombo, ControlProgress
 from scipy.spatial.distance import squareform, pdist
 
 from helpers.functions import get_log_kernel, inv, linear_sum_assignment, \
-    local_maxima, \
-    select_frames
+    local_maxima, select_frames
+from helpers.video_window import VideoWindow
 
 
 class MultipleBlobDetection(BaseWidget):
@@ -108,7 +107,7 @@ class MultipleBlobDetection(BaseWidget):
         if not self._player.value:
             self._error_massages['video'] = 'No video specified'
         elif not self._start_frame.value or not self._stop_frame.value or \
-                self._start_frame.value >= self._stop_frame.value or \
+                int(self._start_frame.value) >= int(self._stop_frame.value) or \
                 int(self._start_frame.value) < 0 or int(self._stop_frame.value) < 0:
             self._error_massages['frames'] = 'Wrong start/end frame number'
 
@@ -374,7 +373,7 @@ class MultipleBlobDetection(BaseWidget):
             # check if distance (residual) isn't to high for assignment
             for i in range(len(unit_cost)):
                 if unit_cost[i] > 20:
-                    print('cost to high, removing', i)
+                    # print('cost to high, removing', i)
                     reject[i] = 0
 
             ##################################################################
@@ -447,8 +446,10 @@ class MultipleBlobDetection(BaseWidget):
         # plot raw measurements
         for frame_positions in max_points:
             for pos in frame_positions:
+                # raw measurements as red dots
                 plt.plot(pos[0], pos[1], 'r.')
         # try:
+        # axis size the same as frame size
         plt.axis([0, vid_frag[0].shape[1], vid_frag[0].shape[0], 0])
         # except IndexError:
         #     index_error = 1
@@ -476,6 +477,7 @@ class MultipleBlobDetection(BaseWidget):
                                     y_est[ind][pos][0] > 10 and \
                                     x_est[ind][pos][0] < x_max - 10 and \
                                     y_est[ind][pos][0] < y_max - 10:
+                        # plot estimates as green dots
                         plt.plot(x_est[ind][pos][0], y_est[ind][pos][0], 'g.')
                         # plt.plot(x_est[ind][::], y_est[ind][::], 'g-')
         # print(frame)
@@ -508,7 +510,6 @@ class MultipleBlobDetection(BaseWidget):
                                        cv2.THRESH_BINARY)
             frame = self.__morphological(frame)
         return frame
-
 
     def __run_event(self):
         """
