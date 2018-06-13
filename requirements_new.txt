@@ -3,7 +3,7 @@ AnyQt==0.0.8
 cycler==0.10.0
 future==0.16.0
 kiwisolver==1.0.1
-#logging-bootstrap==1.0.0
+logging-bootstrap==1.0.0
 macholib==1.9
 matplotlib==2.2.2
 numpy==1.14.3
@@ -14,7 +14,7 @@ PyInstaller==3.3.1
 PyOpenGL==3.1.0
 pyparsing==2.2.0
 PyQt5==5.10.1
-#pysettings==1.0.0
+PySettings==0.1.90
 python-dateutil==2.7.3
 pytz==2018.4
 QScintilla==2.10.4

@@ -4,5 +4,32 @@ pip install git+https://github.com/UmSenhorQualquer/pyforms.git --upgrade
 pip install git+https://github.com/UmSenhorQualquer/pysettings.git --upgrade
 pip install git+https://UmSenhorQualquer@bitbucket.org/fchampalimaud/logging-bootstrap.git --upgrade
 
+sudo apt-get install python3-tk
+
+
+
+# assuming you already have virtualenv & virtualenvwrapper installed
+
+# install pyqt5 globally
+sudo apt-get install python3-pyqt5
+sudo apt install pyqt5-dev
+
+
 Installation of OpenCV on Ubuntu (I am using Ubuntu 16.04):
 https://www.learnopencv.com/install-opencv3-on-ubuntu/
+
+
+cv2 link to the virtualenv:
+
+############ For Python 2 ############
+cd ~/.virtualenvs/lib/python2.7/site-packages
+ln -s /usr/local/lib/python2.7/dist-packages/cv2.so cv2.so
+  
+############ For Python 3 ############
+cd ~/.virtualenvs/lib/python3.6/site-packages
+ln -s /usr/local/lib/python3.6/dist-packages/cv2.cpython-36m-x86_64-linux-gnu.so cv2.so
+
+
+After that in virtualenv to prevent imports error between PyQt5 and cv2:
+pip install opencv-python
+
