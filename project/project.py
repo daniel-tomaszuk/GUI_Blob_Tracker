@@ -120,7 +120,7 @@ class MultipleBlobDetection(BaseWidget):
             ('_runbutton', '_progress_bar'),
             '_player'
         ]
-        self.is_roi_set = 0
+        self.is_roi_set = False
 
     def _parameters_check(self):
         self._error_massages = {}
@@ -241,6 +241,7 @@ class MultipleBlobDetection(BaseWidget):
         if not self.is_roi_set:
             self._roi_x_max.value = height
             self._roi_y_max.value = width
+            self.is_roi_set = True
 
         # x axis
         frame[:int(self._roi_x_min.value)][::] = 255
