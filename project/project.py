@@ -133,7 +133,7 @@ class MultipleBlobDetection(BaseWidget):
 
     def __video_file_selection_event(self):
         """
-        When the videofile is selected instanciate the video in the player
+        When the video file is selected instanciate the video in the player
         """
         self._player.value = self._videofile.value
 
@@ -615,12 +615,20 @@ class MultipleBlobDetection(BaseWidget):
                 x_est, y_est, est_number = self._kalman(maxima_points,
                                                         stop_frame,
                                                         vid_fragment)
-                # A new instance of the VideoWindow is opened and shown to the user.
-                win = VideoWindow()
-                self.test = 'parent test!!!'
-                win.parent = self
-                win.show()
-
+                # cap = cv2.VideoCapture(self._videofile.value)
+                # while cap.isOpened():
+                #     ret, frame = cap.read()
+                #     for est in range(len(x_est)):
+                #         # TODO: draw point on each frame
+                #         for frame_pos in est:
+                #             if x_est[est] and y_est[est]:
+                #                 cv2.circle(frame, (int(x_est[i][-1][0]), int(y_est[i][-1][0])), 1, (0, 0, 255), -1)
+                #     cv2.imshow('frame', frame)
+                #     if cv2.waitKey(20) & 0xFF == ord('q'):
+                #         break
+                #
+                # cap.release()
+                # cv2.destroyAllWindows()
                 print('\nFinal estimates number:', est_number)
                 self._plot_points(vid_fragment, maxima_points, x_est,
                                   y_est, est_number)
