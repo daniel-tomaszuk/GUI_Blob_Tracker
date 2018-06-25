@@ -459,8 +459,7 @@ class MultipleBlobDetection(BaseWidget):
                 if new_detection[frame][i] and \
                                 new_detection[frame][i][0] > 380:
                     x[est_number, ::] = [new_detection[frame][i][0],
-                                         new_detection[frame][i][1], 0, 0, 0,
-                                         0]
+                                         new_detection[frame][i][1], 0, 0, 0, 0]
                     est_number += 1
                     # print('state added', est_number)
                     # print('new posterior\n', x[0:est_number, 0:2])
@@ -611,30 +610,44 @@ class MultipleBlobDetection(BaseWidget):
                 self._progress_bar.value = 100 * (i / len(bin_frames))
                 i += 1
 
-            try:
-                x_est, y_est, est_number = self._kalman(maxima_points,
-                                                        stop_frame,
-                                                        vid_fragment)
-                # cap = cv2.VideoCapture(self._videofile.value)
-                # while cap.isOpened():
-                #     ret, frame = cap.read()
-                #     for est in range(len(x_est)):
-                #         # TODO: draw point on each frame
-                #         for frame_pos in est:
-                #             if x_est[est] and y_est[est]:
-                #                 cv2.circle(frame, (int(x_est[i][-1][0]), int(y_est[i][-1][0])), 1, (0, 0, 255), -1)
-                #     cv2.imshow('frame', frame)
-                #     if cv2.waitKey(20) & 0xFF == ord('q'):
-                #         break
-                #
-                # cap.release()
-                # cv2.destroyAllWindows()
-                print('\nFinal estimates number:', est_number)
-                self._plot_points(vid_fragment, maxima_points, x_est,
-                                  y_est, est_number)
-            except IndexError:
-                self._progress_bar.label += ' ' + 'ERROR while generating estimates. ' \
-                                                  'Try adjusting parameters.'
+            # try:
+            x_est, y_est, est_number = self._kalman(maxima_points,
+                                                    stop_frame,
+                                                    vid_fragment)
+            cap = cv2.VideoCapture(self._videofile.value)
+
+            frame_number = 0
+            while cap.isOpened():
+                ret, frame = cap.read()
+                # mark detections on the frame - blue dots
+                for pos_index in range(len(maxima_points[frame_number])):
+                    tmp_x = maxima_points[frame_number][pos_index][0]
+                    tmp_y = maxima_points[frame_number][pos_index][1]
+                    cv2.circle(frame, (tmp_x, tmp_y), 2, (255, 0, 0), -1)
+
+                # for estimates
+                # TODO: print estimates positions
+                for est in range(len(x_est)):
+                    if x_est[est] and y_est[est]:
+                        try:
+                            cv2.circle(frame, (int(x_est[est][frame_number][0]), int(y_est[est][frame_number][0])), 2, (0, 0, 255), -1)
+                        except IndexError:
+                            pass
+
+                cv2.imshow('frame', frame)
+                frame_number += 1
+                if cv2.waitKey(20) & 0xFF == ord('q') or \
+                        frame_number >= int(self._stop_frame.value):
+                    break
+
+            cap.release()
+            cv2.destroyAllWindows()
+            print('\nFinal estimates number:', est_number)
+            self._plot_points(vid_fragment, maxima_points, x_est,
+                              y_est, est_number)
+            # except IndexError:
+            #     self._progress_bar.label += ' ' + 'ERROR while generating estimates. ' \
+            #                                       'Try adjusting parameters.'
 
         else:
             self._progress_bar.label = 'WRONG PARAMETERS:'
