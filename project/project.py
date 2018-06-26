@@ -270,7 +270,6 @@ class MultipleBlobDetection(BaseWidget):
                  goes with y positions.
         """
         # font for displaying info on the image
-        font = cv2.FONT_HERSHEY_SIMPLEX
         index_error = 0
         value_error = 0
         # step of filter
@@ -434,8 +433,14 @@ class MultipleBlobDetection(BaseWidget):
                     x[index[i][0], ::] = x[index[i][0], ::] + dot(K, y.T).T
                     # append new positions
                 #        if x[i][0] and x[i][1]:
-                x_est[index[i][0]].append([x[index[i][0], 0]])
-                y_est[index[i][0]].append([x[index[i][0], 1]])
+
+                x_est[index[i][0]].append({'frame': frame,
+                                           'x_position': [x[index[i][0], 0]][0],
+                                           'index': index[i][0]})
+                y_est[index[i][0]].append({'frame': frame,
+                                           'y_position': [x[index[i][0], 1]][0],
+                                           'index': index[i][0]})
+
             # posterior state covariance matrix
             P = dot(np.identity(6) - dot(K, H), P)
             print('posterior\n', x[0:est_number, 0:2])
@@ -517,13 +522,13 @@ class MultipleBlobDetection(BaseWidget):
             if len(x_est[ind]):
                 for pos in range(len(x_est[ind])):
                     # don't draw near 0 points and near max points
-                    if not np.isnan(x_est[ind][pos][0]) and \
-                                    x_est[ind][pos][0] > 10 and \
-                                    y_est[ind][pos][0] > 10 and \
-                                    x_est[ind][pos][0] < x_max - 10 and \
-                                    y_est[ind][pos][0] < y_max - 10:
+                    if not np.isnan(x_est[ind][pos]['x_position']) and \
+                                    x_est[ind][pos]['x_position'] > 10 and \
+                                    y_est[ind][pos]['y_position'] > 10 and \
+                                    x_est[ind][pos]['x_position'] < x_max - 10 and \
+                                    y_est[ind][pos]['y_position'] < y_max - 10:
                         # plot estimates as green dots
-                        plt.plot(x_est[ind][pos][0], y_est[ind][pos][0], 'g.')
+                        plt.plot(x_est[ind][pos]['x_position'], y_est[ind][pos]['y_position'], 'g.')
                         # plt.plot(x_est[ind][::], y_est[ind][::], 'g-')
         # print(frame)
         #  [xmin xmax ymin ymax]
@@ -614,6 +619,7 @@ class MultipleBlobDetection(BaseWidget):
             x_est, y_est, est_number = self._kalman(maxima_points,
                                                     stop_frame,
                                                     vid_fragment)
+            print('\nFinal estimates number:', est_number)
             cap = cv2.VideoCapture(self._videofile.value)
 
             frame_number = 0
@@ -626,23 +632,28 @@ class MultipleBlobDetection(BaseWidget):
                     cv2.circle(frame, (tmp_x, tmp_y), 2, (255, 0, 0), -1)
 
                 # for estimates
-                # TODO: print estimates positions
                 for est in range(len(x_est)):
                     if x_est[est] and y_est[est]:
                         try:
-                            cv2.circle(frame, (int(x_est[est][frame_number][0]), int(y_est[est][frame_number][0])), 2, (0, 0, 255), -1)
+                            tmp_x = int(list(filter(lambda x: x['frame'] == frame_number, x_est[est]))[0]['x_position'])
+                            tmp_y = int(list(filter(lambda y: y['frame'] == frame_number, y_est[est]))[0]['y_position'])
+
+                            cv2.circle(frame, (tmp_x, tmp_y), 2, (0, 0, 255), -1)
+                            cv2.putText(frame, str(est),
+                                        (tmp_x + 5, tmp_y - 5),
+                                        cv2.FONT_HERSHEY_SIMPLEX, 0.5,
+                                        (0, 0, 255), 1, cv2.LINE_AA)
                         except IndexError:
                             pass
 
                 cv2.imshow('frame', frame)
                 frame_number += 1
-                if cv2.waitKey(20) & 0xFF == ord('q') or \
+                if cv2.waitKey(100) & 0xFF == ord('q') or \
                         frame_number >= int(self._stop_frame.value):
                     break
 
             cap.release()
             cv2.destroyAllWindows()
-            print('\nFinal estimates number:', est_number)
             self._plot_points(vid_fragment, maxima_points, x_est,
                               y_est, est_number)
             # except IndexError:
