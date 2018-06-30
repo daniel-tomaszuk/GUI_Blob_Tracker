@@ -461,8 +461,11 @@ class MultipleBlobDetection(BaseWidget):
                                   for i in range(len(new_index))])
             # for every detections in the last frame
             for i in range(len(new_detection[len(new_detection) - 1])):
+                # add new estimate only if it's near nozzles
+                # TODO: make it possible to choose where to add new estimates
                 if new_detection[frame][i] and \
                                 new_detection[frame][i][0] > 380:
+
                     x[est_number, ::] = [new_detection[frame][i][0],
                                          new_detection[frame][i][1], 0, 0, 0, 0]
                     est_number += 1
@@ -480,14 +483,18 @@ class MultipleBlobDetection(BaseWidget):
                     striked_tracks[track] += 1
                     print('track/strikes', track, striked_tracks[track])
             for i in range(len(striked_tracks)):
-                if striked_tracks[i] >= 1:
+                # remove estimate if it's strike max_strike_count times
+                # (has no assigned detection for max_strike_count consecutive frames)
+                max_strike_count = 4
+                if striked_tracks[i] >= max_strike_count:
                     x[i, ::] = [None, None, None, None, None, None]
                     if i not in removed_states:
                         removed_states.append(i)
                     print('state_removed', i)
-                ff_nr += 1
+            ff_nr += 1
                 # print(removed_states)
                 # print(index)
+            print('FRAME NUBMER: ', ff_nr)
         return x_est, y_est, est_number
 
     def _plot_points(self, vid_frag, max_points, x_est, y_est, est_number):
@@ -565,7 +572,8 @@ class MultipleBlobDetection(BaseWidget):
         """
         After setting the best parameters run the full algorithm
         """
-
+        height = 0
+        width = 0
         self._parameters_check()
         if not len(self._error_massages):
             start_frame = int(self._start_frame.value)
@@ -637,7 +645,7 @@ class MultipleBlobDetection(BaseWidget):
                         try:
                             tmp_x = int(list(filter(lambda x: x['frame'] == frame_number, x_est[est]))[0]['x_position'])
                             tmp_y = int(list(filter(lambda y: y['frame'] == frame_number, y_est[est]))[0]['y_position'])
-
+                            # mark estimates on the frame - red dots
                             cv2.circle(frame, (tmp_x, tmp_y), 2, (0, 0, 255), -1)
                             cv2.putText(frame, str(est),
                                         (tmp_x + 5, tmp_y - 5),
@@ -645,6 +653,12 @@ class MultipleBlobDetection(BaseWidget):
                                         (0, 0, 255), 1, cv2.LINE_AA)
                         except IndexError:
                             pass
+                # draw frame counter
+                if height:
+                    cv2.putText(frame, 'f_nr: ' + str(frame_number),
+                                (50, height - 10),
+                                cv2.FONT_HERSHEY_COMPLEX, 0.3, (255, 255, 255),
+                                1, cv2.LINE_AA)
 
                 cv2.imshow('frame', frame)
                 frame_number += 1
