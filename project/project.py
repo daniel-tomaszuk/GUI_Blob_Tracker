@@ -628,6 +628,7 @@ class MultipleBlobDetection(BaseWidget):
                                                     stop_frame,
                                                     vid_fragment)
             print('\nFinal estimates number:', est_number)
+            cv2.namedWindow(winname='frame', flags=cv2.WINDOW_KEEPRATIO)
             cap = cv2.VideoCapture(self._videofile.value)
 
             frame_number = 0
@@ -660,7 +661,7 @@ class MultipleBlobDetection(BaseWidget):
                                 cv2.FONT_HERSHEY_COMPLEX, 0.3, (255, 255, 255),
                                 1, cv2.LINE_AA)
 
-                cv2.imshow('frame', frame)
+                cv2.imshow(winname='frame', mat=frame)
                 frame_number += 1
                 if cv2.waitKey(100) & 0xFF == ord('q') or \
                         frame_number >= int(self._stop_frame.value):
