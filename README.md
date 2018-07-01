@@ -2,6 +2,8 @@
 
 ## Demo: https://www.youtube.com/watch?v=HYkQH48euM8&t=
 
+## Description: https://github.com/dghy/GUI_Blob_Tracker/blob/master/Algorithm%20description.pdf
+
 Python GUI Multiple Blob Tracker created in PyForms. Tracker uses Kalman filter and Munkres algorithm for multiple
 blobs tracking. Preview of video allows to check how different operations influence preprocessed frames.
 List of possible operations:
