@@ -2,6 +2,11 @@
 
 ## Demo: https://www.youtube.com/watch?v=HYkQH48euM8&t=
 
+## Other examples with the same method:
+- Cars tracking: https://www.youtube.com/watch?v=rvRgnzNIMQk
+- People tracking (1): https://www.youtube.com/watch?v=wNZ6QWIGafw
+- People tracking (2): https://www.youtube.com/watch?v=zjMfeX9PHRc
+
 ## Description: https://github.com/dghy/GUI_Blob_Tracker/blob/master/Algorithm%20description.pdf
 
 Python GUI Multiple Blob Tracker created in PyForms. Tracker uses Kalman filter and Munkres algorithm for multiple
