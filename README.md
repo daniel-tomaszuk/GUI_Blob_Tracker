@@ -2,7 +2,7 @@
 
 ## Demo: https://www.youtube.com/watch?v=HYkQH48euM8&t=
 
-## Other examples with the same method:
+## My other examples with the same method:
 - Cars tracking: https://www.youtube.com/watch?v=rvRgnzNIMQk
 - People tracking (1): https://www.youtube.com/watch?v=wNZ6QWIGafw
 - People tracking (2): https://www.youtube.com/watch?v=zjMfeX9PHRc
