@@ -6,7 +6,7 @@ kiwisolver==1.0.1
 logging-bootstrap==1.0.0
 macholib==1.9
 matplotlib==2.2.2
-numpy==1.14.3
+numpy==1.22.0
 pefile==2017.11.5
 pkg-resources==0.0.0
 PyForms==3.0.0
