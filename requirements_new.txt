@@ -18,7 +18,7 @@ PySettings==0.1.90
 python-dateutil==2.7.3
 pytz==2018.4
 QScintilla==2.10.4
-scipy==0.19.1
+scipy==1.10.0
 sip==4.19.8
 six==1.11.0
 visvis==1.11.1
