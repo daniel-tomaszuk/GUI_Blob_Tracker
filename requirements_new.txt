@@ -1,7 +1,7 @@
 altgraph==0.15
 AnyQt==0.0.8
 cycler==0.10.0
-future==0.16.0
+future==0.18.3
 kiwisolver==1.0.1
 logging-bootstrap==1.0.0
 macholib==1.9
